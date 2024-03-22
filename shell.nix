@@ -1,5 +1,6 @@
-{ pkgs ? import <nixpkgs> { overlays = [ (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz)) ]; } }:
-
+{ pkgs ? import <nixpkgs> { overlays = [ (import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz)) ]; },
+  unstable ? import <nixos-unstable> { config = { allowUnfree = true; }; }
+}:
 with pkgs;
 
 mkShell {
@@ -11,11 +12,13 @@ mkShell {
     pkg-config
   ] ++ [
     cargo
-    rustc
+    unstable.rustc
     python3
     libGL
     libGLU
     libxkbcommon
+    gtk3-x11
+    gnome.zenity
   ];
   buildInputs = [
     latest.rustChannels.stable.rust
