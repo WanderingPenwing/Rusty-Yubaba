@@ -1,5 +1,5 @@
 [package]
-name = "Yubaba"
+name = "yubaba"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.26.2"
-native-dialog = "0.7.0"
 rfd = "0.14.1"
 xkbcommon = { version = "0.7", features = ["x11"] }
 

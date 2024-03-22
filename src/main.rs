@@ -1,10 +1,14 @@
 use pyo3::{prelude::*, types::PyModule};
-use native_dialog::{FileDialog, MessageDialog, MessageType};
 use eframe::egui;
 use std::path::PathBuf;
 
+const IMAGE_EXTENSION : [&str; 3] = ["png", "jpg", "webp"];
+
+//🎥 🎧 🎨
 fn main() -> Result<(), eframe::Error> {
-    let _test = find_file_name("etc/test/turtle.webp".to_string());
+    if let Ok(test) = find_file_name("etc/test/turtle.webp".to_string()) {
+    	println!("python call successful : etc/test/turtle.webp => {:?}", test);
+    }
 
     let options = eframe::NativeOptions {
    		viewport: egui::ViewportBuilder::default()
@@ -17,12 +21,6 @@ fn main() -> Result<(), eframe::Error> {
 		options,
 		Box::new(move |_cc| Box::from(Yubaba::default())),
 	)
-}
-
-
-struct Yubaba {
-	input_files: Vec<FileEntry>,
-	output_folder: Option<String>,
 }
 
 struct FileEntry {
@@ -41,11 +39,22 @@ impl Default for FileEntry {
 	}
 }
 
+struct Yubaba {
+	input_files: Vec<FileEntry>,
+	output_folder: Option<String>,
+	available_extensions: Vec<String>,
+	selected_extension: String,
+	compress: bool,
+}
+
 impl Default for Yubaba {
 	fn default() -> Self {
 		Self {
 			input_files: vec![],
 			output_folder: None,
+			available_extensions: vec![],
+			selected_extension: "".to_string(),
+			compress: false,
 		}
 	}
 }
@@ -59,6 +68,8 @@ impl eframe::App for Yubaba {
 					self.open_files(paths);
 				}
 			}
+
+			ui.separator();
 
 			let mut index_to_remove : Option<usize> = None;
 			
@@ -77,18 +88,53 @@ impl eframe::App for Yubaba {
 		});
 
 		egui::CentralPanel::default().show(ctx, |ui| {
-			ui.label("Hello there");
-			if ui.add(egui::Button::new("📦 Output Folder")).clicked() {
-				if let Some(path) = rfd::FileDialog::new().pick_folder()
-				{
-					self.select_folder(path);
-				}
-			}
+			egui::Grid::new("my_grid")
+                .num_columns(2)
+                .spacing([40.0, 4.0])
+                .striped(true)
+                .show(ui, |ui| {
+                
+					ui.label("📦 Output Folder");
 
-			if let Some(folder) = &self.output_folder {
-				ui.label(folder);
-			} else {
-				ui.label("no folder selected");
+					let button_text = if let Some(folder) = &self.output_folder {
+						folder
+					} else {
+						"No Folder Selected"
+					};
+					
+					if ui.add(egui::Button::new(button_text)).clicked() {
+						if let Some(path) = rfd::FileDialog::new().pick_folder()
+						{
+							self.select_folder(path);
+						}
+					}
+					ui.end_row();
+					
+					ui.label("📋 Output Format");
+					
+					egui::ComboBox::from_label("")
+						.selected_text(self.selected_extension.clone())
+			            .show_ui(ui, |ui| {
+			                ui.style_mut().wrap = Some(false);
+			                ui.set_min_width(60.0);
+			                for extension in &self.available_extensions {
+			                	if ui.add(egui::SelectableLabel::new(&self.selected_extension == extension, extension)).clicked() {
+			                	    self.selected_extension = extension.to_string();
+			                	}
+			                }
+			        	});
+
+					ui.end_row();
+
+					ui.label("⛶ Compress files");
+					ui.checkbox(&mut self.compress, "");
+
+					ui.end_row();
+				});
+
+			ui.separator();
+			if ui.add(egui::Button::new("Convert")).clicked() {
+				println!("convert");
 			}
 		});
 	}
@@ -101,9 +147,14 @@ impl Yubaba {
 			println!("opened : {}", path.display());
 			let mut new_file = FileEntry::default();
 			if let Ok(file_data) = find_file_name(path_str.clone()) {
-				self.select_folder(PathBuf::from(file_data[0].clone()));
+				if self.output_folder.is_none() {
+					self.select_folder(PathBuf::from(file_data[0].clone()));
+				}
 				new_file.name = file_data[1].clone();
 				new_file.extension = file_data[2].clone();
+				if IMAGE_EXTENSION.contains(&file_data[2].as_str()) && self.available_extensions.is_empty() {
+					self.available_extensions = IMAGE_EXTENSION.to_vec().into_iter().map(|e| e.to_string()).collect();
+				}
 			}
 			new_file.path = path_str;
 			

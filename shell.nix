@@ -3,6 +3,11 @@
 }:
 with pkgs;
 
+let
+  # Specify Pillow as a build input
+  pillow = python3Packages.pillow;
+in
+
 mkShell {
   nativeBuildInputs = with xorg; [
     libxcb
@@ -28,7 +33,7 @@ mkShell {
     python3Packages.virtualenv
     python3Packages.plyer
     python3Packages.pygobject3
-    python3Packages.pillow
+    pillow
   ];
 
   shellHook = ''
