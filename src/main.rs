@@ -1,6 +1,7 @@
 use pyo3::{prelude::*, types::PyModule};
 use eframe::egui;
 use std::path::PathBuf;
+use std::env;
 
 const IMAGE_EXTENSION : [&str; 3] = ["png", "jpg", "webp"];
 
@@ -8,6 +9,10 @@ const IMAGE_EXTENSION : [&str; 3] = ["png", "jpg", "webp"];
 fn main() -> Result<(), eframe::Error> {
     if let Ok(test) = find_file_name("etc/test/turtle.webp".to_string()) {
     	println!("python call successful : etc/test/turtle.webp => {:?}", test);
+    }
+
+    for arg in env::args().skip(1) {
+        println!("Opening file: {}", arg);
     }
 
     let options = eframe::NativeOptions {
@@ -168,23 +173,20 @@ impl Yubaba {
 	}
 }
 
-
-
-
 fn find_file_name(input_path : String) -> PyResult<Vec<String>> {
 	Python::with_gil(|py| {
     	let code = include_str!("python/convert.py");
-    	let maybe_module = PyModule::from_code(py, code, "convert.py", "convert");
+    	let maybe_module = PyModule::from_code(py, code, "convert.py", "convert"); // je génère un module python a partir de code
 
     	match maybe_module {
-    		Ok(module) => {
-    			let function = module.getattr("find_file_name")?;
-    			let args = (&input_path,);
-		    	let result : Vec<String> = function.call1(args)?.extract()?;
-				Ok(result)
+    		Ok(module) => {                                                        // s'il a réussi à le générer
+    			let function = module.getattr("find_file_name")?;                  // on cherche la fonction
+    			let args = (&input_path,);                                         // on prépare les arguments
+		    	let result : Vec<String> = function.call1(args)?.extract()?;       // on appelle la fonction avec les arguments
+				Ok(result)                                                         // on balance le résultat
     		}
     		Err(error) => {
-    			println!("no activator : {}", error);
+    			println!("no module : {}", error);
     			Err(error)
     		}
     	}
