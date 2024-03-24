@@ -33,6 +33,7 @@ mkShell {
     python3Packages.virtualenv
     python3Packages.plyer
     python3Packages.pygobject3
+    python3Packages.ffmpeg-python
     pillow
   ];
 
