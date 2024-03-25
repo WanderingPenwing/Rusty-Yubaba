@@ -1,12 +1,11 @@
 use eframe::egui;
-use egui::{Visuals, Image};
+use egui::{Visuals};
 use std::path::PathBuf;
 use std::env;
 use std::thread;
 use std::sync::Arc;
 use std::collections::HashMap;
 use std::io::{Cursor};
-use std::borrow::Cow;
 use image::codecs::gif::{GifDecoder};
 use image::{AnimationDecoder, Frame};
 
@@ -152,6 +151,7 @@ impl eframe::App for Yubaba {
 
 			if let Some(handle) = &self.processing_handle {
 				ui.label("Processing...");
+				//ui.add(frame_to_egui_image(&self.loading_gif[0]));
 				if handle.is_finished() {
 					self.processing_handle = None;
 				}
@@ -316,13 +316,4 @@ impl Yubaba {
 		self.selected_extension = "".to_string();
 		self.image_settings = None;
 	}
-}
-
-
-pub fn frame_to_egui_image(frame: &Frame) -> Image {
-    let rgba_image = frame.buffer();
-    let (width, height) = rgba_image.dimensions();
-    let bytes = rgba_image.clone().into_raw(); // Convert RgbaImage to raw bytes
-    let uri = format!("bytes://image/png;base64,{}", base64::encode(&bytes)); // Construct URI for the bytes
-    Image::from_bytes(uri, bytes)
 }
