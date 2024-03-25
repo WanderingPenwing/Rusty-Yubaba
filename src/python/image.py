@@ -81,9 +81,9 @@ def traiter_comprimer_image(image_paths, effets_params, output_folder, output_ex
             os.makedirs(output_folder, exist_ok=True)
 
         image_traitee = Image.fromarray(image)
-        image_traitee.save(output_file, format=output_extension.upper(), quality=qualite)
+        image_traitee.save(output_file, format=output_extension.upper().replace("JPG", "JPEG"), quality=qualite)
         print(f"L'image compressée a été sauvegardée sous : {output_file}")
         
 if __name__ == '__main__':
-    traiter_comprimer_image(['image.png'], {'symetrie': {},'rotation': '90'}, 'output', 'png', 80)
+    traiter_comprimer_image(['image.png'], {'symetrie': {},'rotation': '90'}, 'output', 'jpg', 80)
         
