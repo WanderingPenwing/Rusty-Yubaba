@@ -30,11 +30,13 @@ mkShell {
     xorg.libX11
     wayland
     libxkbcommon
-    python3Packages.virtualenv
     python3Packages.plyer
     python3Packages.pygobject3
     python3Packages.ffmpeg-python
     pillow
+    python3Packages.numpy
+    python3Packages.scipy
+    python3Packages.imageio
   ];
 
   shellHook = ''

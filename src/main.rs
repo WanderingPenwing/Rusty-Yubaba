@@ -4,6 +4,9 @@ use std::path::PathBuf;
 use std::env;
 use std::thread;
 use std::sync::Arc;
+use std::collections::HashMap;
+use image::gif::{GifDecoder, GifEncoder};
+use image::{ImageDecoder, AnimationDecoder};
 
 mod format;
 use format::Format;
@@ -12,7 +15,7 @@ mod python;
 
 mod core;
 
-//const TOTORO: &[u8] = include_bytes!("../assets/totoro.gif");
+const TOTORO: &[u8] = include_bytes!("../assets/totoro.gif");
 
 //🎥 🎧 🎨
 fn main() -> Result<(), eframe::Error> {
@@ -57,15 +60,43 @@ impl Default for FileEntry {
 	}
 }
 
+#[derive(Clone)]
+struct ImageSettings {
+	compress: bool,
+	h_flip: bool,
+	greyscale: bool,
+	rotate: i16,
+	smoothing: bool,
+}
+
+impl Default for ImageSettings {
+	fn default() -> Self {
+		Self {
+			compress: false,
+			h_flip: false,
+			greyscale: false,
+			rotate: 0,
+			smoothing: false,
+		}
+	}
+}
+
+
 struct Yubaba {
 	input_files: Vec<FileEntry>,
 	output_folder: Option<String>,
 	file_type: Format,
 	selected_extension: String,
 	processing_handle: Option<thread::JoinHandle<()>>,
+	image_settings: Option<ImageSettings>,
+	frames: bool,
 }
 
 impl Default for Yubaba {
+	let mut decoder = GifDecoder::new(TOTORO).unwrap();
+	let frames = decoder.into_frames();
+	let frames = frames.collect_frames().expect("error decoding gif");
+	
 	fn default() -> Self {
 		Self {
 			input_files: vec![],
@@ -73,6 +104,8 @@ impl Default for Yubaba {
 			file_type: Format::None,
 			selected_extension: "".to_string(),
 			processing_handle: None,
+			image_settings: None,
+			loading_gif: frames,
 		}
 	}
 }
@@ -107,8 +140,7 @@ impl eframe::App for Yubaba {
 			if let Some(index) = index_to_remove {
 				self.input_files.remove(index);
 				if self.input_files.is_empty() {
-					self.file_type = Format::None;
-					self.selected_extension = "".to_string();
+					self.reset();
 				}
 			}
 		});
@@ -159,6 +191,33 @@ impl eframe::App for Yubaba {
 			        	});
 
 					ui.end_row();
+
+					if self.file_type != Format::Image {
+						return
+					}
+					if let Some(settings) = &mut self.image_settings {
+						ui.label("⛶ Compress files");
+						ui.checkbox(&mut settings.compress, "");
+						ui.end_row();
+
+						ui.label("↔ Flip");
+						ui.checkbox(&mut settings.h_flip, "");
+						ui.end_row();
+						
+						ui.label("↺ Rotation");
+						ui.add(egui::Slider::new(&mut settings.rotate, -180..=180).suffix("°"));
+						ui.end_row();
+
+						ui.label("# Greyscale");
+						ui.checkbox(&mut settings.greyscale, "");
+						ui.end_row();
+
+						ui.label("☁ Smoothing");
+						ui.checkbox(&mut settings.smoothing, "");
+						ui.end_row();
+					} else {
+						self.image_settings = Some(ImageSettings::default())
+					}
 				});
 
 			ui.separator();
@@ -172,8 +231,33 @@ impl eframe::App for Yubaba {
 					let selected_extension = self.selected_extension.clone();
 					let file_type = self.file_type.clone();
 					let output_folder = output_folder_borrow.clone();
+					let image_settings = self.image_settings.clone();
 					self.processing_handle = Some(thread::spawn(move || {
 						match file_type {
+							Format::Image => {
+								let settings = if let Some(img_settings) = image_settings {
+									img_settings
+								} else {
+									ImageSettings::default()
+								};
+								
+								let quality = if settings.compress {15} else {85};
+								
+								let mut effects = HashMap::new();
+								if settings.h_flip {
+									effects.insert("symetrie".to_string(),"".to_string());
+								}
+								if settings.greyscale {
+									effects.insert("niveaux_de_gris".to_string(),"".to_string());
+								}
+								if settings.smoothing {
+									effects.insert("lissage".to_string(),"".to_string());
+								}
+								if settings.rotate != 0 {
+									effects.insert("rotation".to_string(), format!("{}", settings.rotate));
+								}
+								let _ = python::convert_image(input_files, effects, output_folder, selected_extension, quality);
+							}
 							Format::Audio => {
 								let _ = python::convert_audio(input_files, output_folder, selected_extension);
 							}
@@ -222,6 +306,12 @@ impl Yubaba {
 	fn select_folder(&mut self, path: PathBuf) {
 		println!("folder : {}", path.display());
 		self.output_folder = Some(path.to_string_lossy().to_string());
+	}
+
+	fn reset(&mut self) {
+		self.file_type = Format::None;
+		self.selected_extension = "".to_string();
+		self.image_settings = None;
 	}
 }
 
