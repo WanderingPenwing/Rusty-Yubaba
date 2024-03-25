@@ -1,14 +1,24 @@
 use pyo3::{prelude::*, types::PyModule};
 use eframe::egui;
+use eframe::egui::Visuals;
 use std::path::PathBuf;
 use std::env;
+use std::thread;
+use std::time::Duration;
+use std::sync::Arc;
 
 mod format;
 use format::Format;
 
+mod python;
+
+mod core;
+
+//const TOTORO: &[u8] = include_bytes!("../assets/totoro.gif");
+
 //🎥 🎧 🎨
 fn main() -> Result<(), eframe::Error> {
-	if let Ok(test) = find_file_name("etc/test/turtle.webp".to_string()) {
+	if let Ok(test) = python::find_file_name("etc/test/turtle.webp".to_string()) {
 		println!("python call successful : etc/test/turtle.webp => {:?}", test);
 	}
 
@@ -16,9 +26,12 @@ fn main() -> Result<(), eframe::Error> {
 		println!("Opening file: {}", arg);
 	}
 
+	let icon_data = core::load_icon().unwrap_or_default();
+
 	let options = eframe::NativeOptions {
    		viewport: egui::ViewportBuilder::default()
-   			.with_inner_size([1200.0, 800.0]),
+   			.with_inner_size([1200.0, 800.0])
+   			.with_icon(Arc::new(icon_data)),
    		..Default::default()
    	};
 
@@ -51,6 +64,7 @@ struct Yubaba {
 	output_folder: Option<String>,
 	file_type: Format,
 	selected_extension: String,
+	processing_handle: Option<thread::JoinHandle<()>>,
 }
 
 impl Default for Yubaba {
@@ -60,12 +74,15 @@ impl Default for Yubaba {
 			output_folder: None,
 			file_type: Format::None,
 			selected_extension: "".to_string(),
+			processing_handle: None,
 		}
 	}
 }
 
 impl eframe::App for Yubaba {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+		let mut style = (*ctx.style()).clone();
+		style.visuals = Visuals::dark();
 		egui::SidePanel::left("file_tree_panel").show(ctx, |ui| {
 			if ui.add(egui::Button::new(&format!("📁 Open Files {}", self.file_type.display()))).clicked() {
 				if let Some(paths) = rfd::FileDialog::new()
@@ -99,12 +116,20 @@ impl eframe::App for Yubaba {
 		});
 
 		egui::CentralPanel::default().show(ctx, |ui| {
+
+			if let Some(handle) = &self.processing_handle {
+				ui.label("Processing...");
+				if handle.is_finished() {
+					self.processing_handle = None;
+				}
+				return
+			}
+			
 			egui::Grid::new("my_grid")
 				.num_columns(2)
 				.spacing([40.0, 4.0])
 				.striped(true)
 				.show(ui, |ui| {
-				
 					ui.label("📦 Output Folder");
 
 					let button_text = if let Some(folder) = &self.output_folder {
@@ -141,14 +166,33 @@ impl eframe::App for Yubaba {
 			ui.separator();
 			if ui.add(egui::Button::new("Convert")).clicked() {
 				println!("convert");
-				if self.file_type == Format::Audio {
-					if self.selected_extension == "" {
-						return
-					}
-					if let Some(output_folder) = &self.output_folder {
-						let _ = convert_audio(self.input_files.clone(), output_folder.clone(), self.selected_extension.clone());
-					}
+				if self.selected_extension == "" {
+					return
 				}
+				if let Some(output_folder_borrow) = &self.output_folder {
+					let input_files = self.input_files.clone();
+					let selected_extension = self.selected_extension.clone();
+					let file_type = self.file_type.clone();
+					let output_folder = output_folder_borrow.clone();
+					self.processing_handle = Some(thread::spawn(move || {
+						match file_type {
+							Format::Audio => {
+								let _ = python::convert_audio(input_files, output_folder, selected_extension);
+							}
+							Format::Video => {
+								let _ = python::convert_video(input_files, output_folder, selected_extension);
+							}
+							_ => {
+								return
+							}
+						}
+						println!("finished");
+					}));
+				}
+				
+				self.input_files = vec![];
+				self.file_type = Format::None;
+				self.selected_extension = "".to_string();
 			}
 		});
 	}
@@ -160,7 +204,7 @@ impl Yubaba {
 			let path_str = path.to_string_lossy().to_string();
 			println!("opened : {}", path.display());
 			let mut new_file = FileEntry::default();
-			if let Ok(file_data) = find_file_name(path_str.clone()) {
+			if let Ok(file_data) = python::find_file_name(path_str.clone()) {
 				if self.output_folder.is_none() {
 					self.select_folder(PathBuf::from(file_data[0].clone()));
 				}
@@ -183,43 +227,4 @@ impl Yubaba {
 	}
 }
 
-fn find_file_name(input_path : String) -> PyResult<Vec<String>> {
-	Python::with_gil(|py| {
-		let code = include_str!("python/convert.py");
-		let maybe_module = PyModule::from_code(py, code, "convert.py", "convert"); // je génère un module python a partir de code
 
-		match maybe_module {
-			Ok(module) => {														// s'il a réussi à le générer
-				let function = module.getattr("find_file_name")?;				  // on cherche la fonction
-				let args = (&input_path,);										 // on prépare les arguments
-				let result : Vec<String> = function.call1(args)?.extract()?;	   // on appelle la fonction avec les arguments
-				Ok(result)														 // on balance le résultat
-			}
-			Err(error) => {
-				println!("no module : {}", error);
-				Err(error)
-			}
-		}
-	})
-}
-
-fn convert_audio(inputs : Vec<FileEntry>, output_folder : String, output_format : String) -> PyResult<()> {
-	let input_paths : Vec<String> = inputs.into_iter().map(|f| f.path.clone()).collect();
-	Python::with_gil(|py| {
-		let code = include_str!("python/sound.py");
-		let maybe_module = PyModule::from_code(py, code, "sound.py", "sound"); // je génère un module python a partir de code
-
-		match maybe_module {
-			Ok(module) => {														// s'il a réussi à le générer
-				let function = module.getattr("audio_convert")?;				  // on cherche la fonction
-				let args = (&input_paths.into_py(py), &output_folder, &output_format);										 // on prépare les arguments
-				let _result : Vec<String> = function.call1(args)?.extract()?;	   // on appelle la fonction avec les arguments
-				Ok(())														 // on balance le résultat
-			}
-			Err(error) => {
-				println!("no module : {}", error);
-				Err(error)
-			}
-		}
-	})
-}

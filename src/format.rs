@@ -51,4 +51,13 @@ impl Format {
 			Self::None => "  ".to_string(),
 		}
 	}
+
+	pub fn clone(&self) -> Self {
+		match self {
+			Self::Image => Self::Image,
+			Self::Audio => Self::Audio,
+			Self::Video => Self::Video,
+			Self::None => Self::None,
+		}
+	}
 }
