@@ -1,12 +1,14 @@
 use eframe::egui;
-use eframe::egui::Visuals;
+use egui::{Visuals, Image};
 use std::path::PathBuf;
 use std::env;
 use std::thread;
 use std::sync::Arc;
 use std::collections::HashMap;
-use image::gif::{GifDecoder, GifEncoder};
-use image::{ImageDecoder, AnimationDecoder};
+use std::io::{Cursor};
+use std::borrow::Cow;
+use image::codecs::gif::{GifDecoder};
+use image::{AnimationDecoder, Frame};
 
 mod format;
 use format::Format;
@@ -14,8 +16,6 @@ use format::Format;
 mod python;
 
 mod core;
-
-const TOTORO: &[u8] = include_bytes!("../assets/totoro.gif");
 
 //🎥 🎧 🎨
 fn main() -> Result<(), eframe::Error> {
@@ -89,15 +89,18 @@ struct Yubaba {
 	selected_extension: String,
 	processing_handle: Option<thread::JoinHandle<()>>,
 	image_settings: Option<ImageSettings>,
-	frames: bool,
+	loading_gif: Vec<Frame>,
 }
 
 impl Default for Yubaba {
-	let mut decoder = GifDecoder::new(TOTORO).unwrap();
-	let frames = decoder.into_frames();
-	let frames = frames.collect_frames().expect("error decoding gif");
-	
 	fn default() -> Self {
+		let gif_data = include_bytes!("../assets/totoro.gif");
+        let gif_cursor = Cursor::new(Vec::from(gif_data));
+
+        let decoder = GifDecoder::new(gif_cursor).unwrap();
+        let frames = decoder.into_frames();
+        let frames = frames.collect_frames().expect("error decoding gif");
+		
 		Self {
 			input_files: vec![],
 			output_folder: None,
@@ -316,3 +319,10 @@ impl Yubaba {
 }
 
 
+pub fn frame_to_egui_image(frame: &Frame) -> Image {
+    let rgba_image = frame.buffer();
+    let (width, height) = rgba_image.dimensions();
+    let bytes = rgba_image.clone().into_raw(); // Convert RgbaImage to raw bytes
+    let uri = format!("bytes://image/png;base64,{}", base64::encode(&bytes)); // Construct URI for the bytes
+    Image::from_bytes(uri, bytes)
+}
