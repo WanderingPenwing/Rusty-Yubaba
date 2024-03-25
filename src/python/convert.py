@@ -19,7 +19,7 @@ def find_file_name(input_path):
 		if L == '.' and not dot:
 			dot = True
 			continue
-		if L == '/':
+		if L == '/' or L == "\\":
 			slash = True
 		
 		if not dot:
