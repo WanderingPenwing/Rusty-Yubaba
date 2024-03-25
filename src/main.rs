@@ -204,7 +204,7 @@ fn convert_audio(input_path : String, output_path : String) -> PyResult<()> {
 				let function = module.getattr("find_file_name")?;				  // on cherche la fonction
 				let args = (&input_path,);										 // on prépare les arguments
 				let result : Vec<String> = function.call1(args)?.extract()?;	   // on appelle la fonction avec les arguments
-				Ok(result)														 // on balance le résultat
+				Ok(())														 // on balance le résultat
 			}
 			Err(error) => {
 				println!("no module : {}", error);
