@@ -116,6 +116,10 @@ impl eframe::App for Yubaba {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 		ctx.set_visuals(Visuals::dark());
 		
+		egui::TopBottomPanel::bottom("credits").show(ctx, |ui| {
+			ui.label("Yubaba, inspired by “Spirited Away”, is a file conversion tool made by Nicolas, Paul, Thomas, and Eliott during the Cod’Icam Hackathon, March 2024, built with Rust and Python.");	
+		});
+		
 		egui::SidePanel::left("file_tree_panel").show(ctx, |ui| {
 			if ui.add(egui::Button::new(&format!("📁 Open Files {}", self.file_type.display()))).clicked() {
 				if let Some(paths) = rfd::FileDialog::new()
