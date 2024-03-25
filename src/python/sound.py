@@ -2,7 +2,7 @@ import ffmpeg
 
 def audio_convert (input_list, output_folder, output_extension):
 	for input_file in input_list :
-		input_file = input_file.replace("\\", "/") //"
+		input_file = input_file.replace("\\", "/") #"
 		input_name = input_file.split('.')
 		
 		input_path = input_name[0].split("/")

@@ -29,6 +29,7 @@ fn main() -> Result<(), eframe::Error> {
 	)
 }
 
+#[derive(Clone)]
 struct FileEntry {
 	name: String,
 	extension: String,
@@ -140,6 +141,14 @@ impl eframe::App for Yubaba {
 			ui.separator();
 			if ui.add(egui::Button::new("Convert")).clicked() {
 				println!("convert");
+				if self.file_type == Format::Audio {
+					if self.selected_extension == "" {
+						return
+					}
+					if let Some(output_folder) = &self.output_folder {
+						let _ = convert_audio(self.input_files.clone(), output_folder.clone(), self.selected_extension.clone());
+					}
+				}
 			}
 		});
 	}
@@ -194,16 +203,17 @@ fn find_file_name(input_path : String) -> PyResult<Vec<String>> {
 	})
 }
 
-fn convert_audio(input_path : String, output_path : String) -> PyResult<()> {
+fn convert_audio(inputs : Vec<FileEntry>, output_folder : String, output_format : String) -> PyResult<()> {
+	let input_paths : Vec<String> = inputs.into_iter().map(|f| f.path.clone()).collect();
 	Python::with_gil(|py| {
 		let code = include_str!("python/sound.py");
 		let maybe_module = PyModule::from_code(py, code, "sound.py", "sound"); // je génère un module python a partir de code
 
 		match maybe_module {
 			Ok(module) => {														// s'il a réussi à le générer
-				let function = module.getattr("find_file_name")?;				  // on cherche la fonction
-				let args = (&input_path,);										 // on prépare les arguments
-				let result : Vec<String> = function.call1(args)?.extract()?;	   // on appelle la fonction avec les arguments
+				let function = module.getattr("audio_convert")?;				  // on cherche la fonction
+				let args = (&input_paths.into_py(py), &output_folder, &output_format);										 // on prépare les arguments
+				let _result : Vec<String> = function.call1(args)?.extract()?;	   // on appelle la fonction avec les arguments
 				Ok(())														 // on balance le résultat
 			}
 			Err(error) => {
