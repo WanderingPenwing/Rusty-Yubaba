@@ -1,10 +1,8 @@
-use pyo3::{prelude::*, types::PyModule};
 use eframe::egui;
 use eframe::egui::Visuals;
 use std::path::PathBuf;
 use std::env;
 use std::thread;
-use std::time::Duration;
 use std::sync::Arc;
 
 mod format;
@@ -81,8 +79,8 @@ impl Default for Yubaba {
 
 impl eframe::App for Yubaba {
 	fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-		let mut style = (*ctx.style()).clone();
-		style.visuals = Visuals::dark();
+		ctx.set_visuals(Visuals::dark());
+		
 		egui::SidePanel::left("file_tree_panel").show(ctx, |ui| {
 			if ui.add(egui::Button::new(&format!("📁 Open Files {}", self.file_type.display()))).clicked() {
 				if let Some(paths) = rfd::FileDialog::new()
