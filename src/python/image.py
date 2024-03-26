@@ -75,7 +75,11 @@ def traiter_comprimer_image(image_paths, effets_params, output_folder, output_ex
 
         nom_base = os.path.basename(image_path).split('.')[0]
         effets_nom = "_".join(effets_params.keys())
-        output_file = os.path.join(output_folder, f"{nom_base}_{effets_nom}_compresse.{output_extension}")
+        output_file = os.path.join(output_folder, f"{nom_base}_{effets_nom}.{output_extension}")
+        i = 1
+        while os.path.exists(output_file) :
+            output_file = os.path.join(output_folder, f"{nom_base}_{effets_nom}_{i}.{output_extension}")
+            i += 1
 
         if not os.path.isdir(output_folder):
             os.makedirs(output_folder, exist_ok=True)

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 base64 = "0.22.0"
 eframe = "0.26.2"
+egui_extras = { version = "0.26.2", features = ["all_loaders"] }
 image = { version = "0.25.0", features = ["gif"] }
 rfd = "0.14.1"
 #xkbcommon = { version = "0.7", features = ["x11"] }

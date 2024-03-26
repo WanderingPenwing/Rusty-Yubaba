@@ -17,3 +17,42 @@ pub fn load_icon() -> Result<egui::IconData, Box<dyn Error>> {
 		height: icon_height,
 	})
 }
+
+
+#[derive(Clone)]
+pub struct FileEntry {
+	pub name: String,
+	pub extension: String,
+	pub path: String,
+}
+
+impl Default for FileEntry {
+	fn default() -> Self {
+		Self {
+			name: "none".to_string(),
+			extension: "".to_string(),
+			path: "".to_string(),
+		}
+	}
+}
+
+#[derive(Clone)]
+pub struct ImageSettings {
+	pub compress: bool,
+	pub h_flip: bool,
+	pub greyscale: bool,
+	pub rotate: i16,
+	pub smoothing: bool,
+}
+
+impl Default for ImageSettings {
+	fn default() -> Self {
+		Self {
+			compress: false,
+			h_flip: false,
+			greyscale: false,
+			rotate: 0,
+			smoothing: false,
+		}
+	}
+}
