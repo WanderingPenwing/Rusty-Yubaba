@@ -1,7 +1,7 @@
-const IMAGE_EXTENSION : [&str; 4] = ["jpeg", "png", "jpg", "webp"];
+const IMAGE_EXTENSION : [&str; 5] = ["jpeg", "png", "jpg", "webp", "jfif"];
 const AUDIO_EXTENSION : [&str; 3] = ["mp3", "wav", "ogg"];
 const VIDEO_EXTENSION : [&str; 4] = ["mp4", "mkv", "mov", "avi"];
-const ALL_EXTENSION : [&str; 11] = ["jpeg", "png", "jpg", "webp", "mp3", "wav", "ogg", "mp4", "mkv", "mov", "avi"];
+const ALL_EXTENSION : [&str; 12] = ["jpeg", "jfif", "png", "jpg", "webp", "mp3", "wav", "ogg", "mp4", "mkv", "mov", "avi"];
 
 #[derive(PartialEq)]
 pub enum Format {
