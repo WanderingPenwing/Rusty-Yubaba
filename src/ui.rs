@@ -81,7 +81,7 @@ impl Yubaba {
 			                ui.style_mut().wrap = Some(false);
 			                ui.set_min_width(60.0);
 			                for extension in self.file_type.get_extensions() {
-			                	if extension == "jpg".to_string() {
+			                	if extension == "jpg".to_string() || extension == "jfif".to_string(){
 			                		continue
 			                	}
 			                	if ui.add(egui::SelectableLabel::new(self.selected_extension == extension, extension.clone())).clicked() {
@@ -108,13 +108,13 @@ impl Yubaba {
 						ui.add(egui::Slider::new(&mut settings.rotate, -180..=180).suffix("°"));
 						ui.end_row();
 
-						ui.label("# Greyscale");
-						ui.checkbox(&mut settings.greyscale, "");
-						ui.end_row();
+						// ui.label("# Greyscale");
+						// ui.checkbox(&mut settings.greyscale, "");
+						// ui.end_row();
 
-						ui.label("☁ Smoothing");
-						ui.checkbox(&mut settings.smoothing, "");
-						ui.end_row();
+						// ui.label("☁ Smoothing");
+						// ui.checkbox(&mut settings.smoothing, "");
+						// ui.end_row();
 					} else {
 						self.image_settings = Some(ImageSettings::default())
 					}
