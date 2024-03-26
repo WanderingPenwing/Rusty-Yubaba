@@ -81,6 +81,9 @@ impl Yubaba {
 			                ui.style_mut().wrap = Some(false);
 			                ui.set_min_width(60.0);
 			                for extension in self.file_type.get_extensions() {
+			                	if extension == "jpg".to_string() {
+			                		continue
+			                	}
 			                	if ui.add(egui::SelectableLabel::new(self.selected_extension == extension, extension.clone())).clicked() {
 			                	    self.selected_extension = extension.to_string();
 			                	}
